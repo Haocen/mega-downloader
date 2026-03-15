@@ -6,64 +6,32 @@
     <title>MEGA Downloader</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .card { border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
-        .history-list { max-height: 200px; overflow-y: auto; font-size: 0.9rem; }
+        :root { --mega-red: #d92128; }
+        body { 
+            background-color: #f0f2f5; 
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .container { display: flex; justify-content: center; width: 100%; padding: 20px; }
+        .card { 
+            border: none; border-radius: 16px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
+            width: 100%; max-width: 550px; background: #fff; padding: 2rem;
+        }
+        .btn-primary { background-color: var(--mega-red); border-color: var(--mega-red); }
+        .btn-primary:hover { background-color: #b01a1f; border-color: #b01a1f; }
+        .history-list { max-height: 300px; overflow-y: auto; border-radius: 8px; margin-top: 1rem; }
+        .list-group-item { font-size: 0.9rem; border-left: none; border-right: none; }
     </style>
-  <style>
-    :root {
-        --mega-red: #d92128;
-    }
-    body { 
-        background-color: #f0f2f5; 
-        min-height: 100vh; 
-        display: flex; 
-        align-items: center; /* Vertical center */
-        justify-content: center; /* Horizontal center */
-        margin: 0;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .container {
-        display: flex;
-        justify-content: center;
-        width: 100%;
-        padding: 20px;
-    }
-    .card { 
-        border: none;
-        border-radius: 16px; 
-        box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
-        width: 100%; 
-        max-width: 550px; 
-        background: #fff;
-    }
-    .btn-primary {
-        background-color: var(--mega-red);
-        border-color: var(--mega-red);
-    }
-    .btn-primary:hover, .btn-primary:disabled {
-        background-color: #b01a1f;
-        border-color: #b01a1f;
-    }
-    .history-list { 
-        max-height: 250px; 
-        overflow-y: auto; 
-        border-radius: 8px;
-    }
-    /* Custom scrollbar for the history */
-    .history-list::-webkit-scrollbar {
-        width: 6px;
-    }
-    .history-list::-webkit-scrollbar-thumb {
-        background: #ccc;
-        border-radius: 10px;
-    }
-</style>
 </head>
 <body>
 
 <div class="container">
-    <div class="card p-4">
+    <div class="card">
         <h3 class="text-center mb-4">🚀 MEGA Remote Get</h3>
         
         <form id="downloadForm">
@@ -73,12 +41,12 @@
             </div>
         </form>
 
-        <div id="statusMessage" class="mt-2"></div>
-
         <hr>
-        <h6>History</h6>
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Recent Activity</h6>
+            <button class="btn btn-sm btn-outline-secondary" id="clearBtn">Clear</button>
+        </div>
         <ul class="list-group history-list" id="historyList"></ul>
-        <button class="btn btn-sm btn-link text-danger p-0 mt-2" onclick="clearHistory()">Clear History</button>
     </div>
 </div>
 
@@ -87,19 +55,21 @@
     const input = document.getElementById('megaLink');
     const btn = document.getElementById('submitBtn');
     const historyList = document.getElementById('historyList');
+    const clearBtn = document.getElementById('clearBtn');
 
-    // Load history on start
+    // Initial load
     renderHistory();
-    
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const link = input.value.trim();
         if (!link) return;
 
-        // 1. Lockdown
+        // Lockdown UI
         input.disabled = true;
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+        const originalText = btn.textContent;
+        btn.textContent = '...ing'; 
 
         try {
             const response = await fetch('/download', {
@@ -109,16 +79,19 @@
             });
             const data = await response.json();
             
-            // 2. Save to LocalStorage
-            saveToHistory({ link, ...data });
+            saveToHistory({ 
+                link, 
+                success: data.exitCode === 0, 
+                message: data.message,
+                time: new Date().toLocaleTimeString() 
+            });
 
         } catch (err) {
-            alert("Connection error: " + err.message);
+            saveToHistory({ link, success: false, message: "Network Error", time: "" });
         } finally {
-            // 3. Re-enable UI
             input.disabled = false;
             btn.disabled = false;
-            btn.innerText = 'Download';
+            btn.textContent = originalText;
             input.value = '';
             renderHistory();
         }
@@ -126,29 +99,49 @@
 
     function saveToHistory(item) {
         const history = JSON.parse(localStorage.getItem('mega_history') || '[]');
-        history.unshift(item); // Add to top
-        localStorage.setItem('mega_history', JSON.stringify(history.slice(0, 20))); // Keep last 20
+        history.unshift(item);
+        localStorage.setItem('mega_history', JSON.stringify(history.slice(0, 10)));
     }
 
     function renderHistory() {
+        // Clear children safely
+        while (historyList.firstChild) {
+            historyList.removeChild(historyList.firstChild);
+        }
+
         const history = JSON.parse(localStorage.getItem('mega_history') || '[]');
-        historyList.innerHTML = history.map(item => `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div class="text-truncate" style="max-width: 70%;">
-                    <strong>${item.message}</strong><br>
-                    <small class="text-muted">${item.link}</small>
-                </div>
-                <span class="badge ${item.exitCode === 0 ? 'bg-success' : 'bg-danger'} rounded-pill">
-                    ${item.exitCode === 0 ? 'Success' : 'Error'}
-                </span>
-            </li>
-        `).join('');
+        
+        history.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+            const textWrapper = document.createElement('div');
+            textWrapper.className = 'text-truncate px-2';
+            
+            const strong = document.createElement('strong');
+            strong.textContent = item.message;
+            
+            const br = document.createElement('br');
+            
+            const small = document.createElement('small');
+            small.className = 'text-muted';
+            small.textContent = item.link;
+
+            textWrapper.append(strong, br, small);
+
+            const badge = document.createElement('span');
+            badge.className = `badge rounded-pill ${item.success ? 'bg-success' : 'bg-danger'}`;
+            badge.textContent = item.success ? 'Done' : 'Fail';
+
+            li.append(textWrapper, badge);
+            historyList.appendChild(li);
+        });
     }
 
-    function clearHistory() {
+    clearBtn.onclick = () => {
         localStorage.removeItem('mega_history');
         renderHistory();
-    }
+    };
 </script>
 
 </body>
