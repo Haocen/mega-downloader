@@ -1,0 +1,32 @@
+# 🚀 MEGA Remote Downloader
+
+A secure, lightweight Koa.js server wrapped in Docker that allows you to trigger `mega-get` downloads via a web interface.
+
+> **Disclaimer:** This program was designed and authored by Gemini (an AI collaborator). It is provided "as is," without warranty of any kind. Use it responsibly and ensure you comply with MEGA's terms of service.
+
+---
+
+## 🛠 Features
+* **Secure Command Execution:** Uses `child_process.spawn` to prevent bash injection.
+* **URL Validation:** Strict hostname checking to ensure only MEGA links are processed.
+* **Permissions Control:** Supports `PUID` and `PGID` to match host file system permissions.
+* **Dockerized:** Built on Alpine Linux for a minimal footprint.
+* **Modern UI:** A clean, Bootstrap 5 interface with local storage history.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Using Docker (Recommended)
+You can run this directly using the image from GHCR
+
+```bash
+docker run -d \
+  --name mega-downloader \
+  --restart always \
+  -p 3000:3000 \
+  -e PUID=$(id -u) \
+  -e PGID=$(id -g) \
+  -e DOWNLOAD_DIR=/downloads \
+  -v $(pwd)/my_downloads:/downloads \
+  ghcr.io/<username>/<repo-name>:latest

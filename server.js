@@ -23,6 +23,13 @@ const router = new Router();
 app.use(bodyParser());
 app.use(serve(path.join(__dirname, 'public')));
 
+// Healthcheck endpoint
+router.get('/', async (ctx, next) => {
+  ctx.status = 200;
+  ctx.body = { status: 'online', downloadDir: DOWNLOAD_DIR };
+  await next();
+});
+
 router.post('/download', async (ctx, next) => {
   const { link } = ctx.request.body;
 
