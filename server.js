@@ -24,7 +24,7 @@ app.use(bodyParser());
 app.use(serve(path.join(__dirname, 'public')));
 
 // Healthcheck endpoint
-router.get('/', async (ctx, next) => {
+router.get('/health', async (ctx, next) => {
   ctx.status = 200;
   ctx.body = { status: 'online', downloadDir: DOWNLOAD_DIR };
   await next();

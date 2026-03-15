@@ -23,7 +23,7 @@ ENV DOWNLOAD_DIR=/downloads
 # Healthcheck: Every 30s, check if the server is responding on the PORT
 # --fail makes curl return a non-zero exit code if the server returns 4xx/5xx
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl --fail http://localhost:${PORT}/ || exit 1
+  CMD curl --fail http://localhost:${PORT}/health || exit 1
 
 EXPOSE 3000
 
