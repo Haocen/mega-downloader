@@ -69,7 +69,7 @@
         input.disabled = true;
         btn.disabled = true;
         const originalText = btn.textContent;
-        btn.textContent = '...ing'; 
+        btn.textContent = 'Started'; 
 
         try {
             const response = await fetch('/download', {
@@ -131,7 +131,7 @@
 
             const badge = document.createElement('span');
             badge.className = `badge rounded-pill ${item.success ? 'bg-success' : 'bg-danger'}`;
-            badge.textContent = item.success ? 'Started' : 'Fail';
+            badge.textContent = item.success ? 'Finished' : 'Fail';
 
             li.append(textWrapper, badge);
             historyList.appendChild(li);
