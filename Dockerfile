@@ -1,11 +1,13 @@
 # --- Stage 1: Builder ---
 FROM alpine:latest AS builder
 
-# Ensure we have all necessary tools and libraries
-RUN apk add --update --no-cache \
+# Added bash and curl - often required for MEGA internal scripts
+RUN apk add --no-cache \
     build-base \
     cmake \
     git \
+    bash \
+    curl \
     autoconf \
     automake \
     libtool \
@@ -14,7 +16,6 @@ RUN apk add --update --no-cache \
     linux-headers \
     c-ares-dev \
     crypto++-dev \
-    curl \
     curl-dev \
     freeimage-dev \
     libsodium-dev \
@@ -31,9 +32,11 @@ WORKDIR /opt/MEGAcmd
 # Clone with submodules
 RUN git clone --recursive https://github.com/meganz/MEGAcmd.git .
 
-# THE FIX: Added -DUSE_VCPKG=OFF
-# This forces CMake to use the 'apk' packages you installed above 
-# instead of trying to clone vcpkg.
+# THE "KILL SWITCH": 
+# This prevents the CMake script from trying to clone vcpkg regardless of flags.
+RUN sed -i 's/include(cmake\/vcpkg_check.cmake)/# include(cmake\/vcpkg_check.cmake)/g' CMakeLists.txt
+
+# Now run the build using system libraries
 RUN rm -rf build && mkdir build && cd build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
@@ -45,12 +48,30 @@ RUN rm -rf build && mkdir build && cd build && \
     make -j$(nproc) && \
     make install
 
-# --- Stage 2: Runtime (Keep this as is from previous version) ---
+# --- Stage 2: Final Runtime ---
 FROM alpine:latest
-RUN apk add --no-cache \
-    c-ares crypto++ libcurl libgcc libstdc++ libuv libsodium \
-    sqlite-libs pcre readline freeimage zlib nodejs npm su-exec shadow curl
 
+# Runtime dependencies
+RUN apk add --no-cache \
+    c-ares \
+    crypto++ \
+    libcurl \
+    libgcc \
+    libstdc++ \
+    libuv \
+    libsodium \
+    sqlite-libs \
+    pcre \
+    readline \
+    freeimage \
+    zlib \
+    nodejs \
+    npm \
+    su-exec \
+    shadow \
+    curl
+
+# Copy results
 COPY --from=builder /usr/local/bin/mega-* /usr/local/bin/
 COPY --from=builder /usr/local/lib/libmega* /usr/local/lib/
 RUN ldconfig /usr/local/lib || true
