@@ -34,7 +34,7 @@ WORKDIR /opt/MEGAcmd
 RUN git clone --recursive https://github.com/meganz/MEGAcmd.git .
 
 # CMake Build Process
-RUN mkdir build && cd build && \
+RUN mkdir -p build && cd build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DENABLE_VARIOUS=ON \
