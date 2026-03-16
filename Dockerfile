@@ -54,7 +54,7 @@ RUN mkdir -p build && cd build && \
 FROM alpine:latest
 
 # Runtime dependencies
-RUN apk add --no-cache \
+RUN apk add --update --no-cache \
     c-ares \
     crypto++ \
     libcurl \
