@@ -12,7 +12,7 @@ import { Transform } from 'node:stream';
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 // New: Resolve the download directory from env
-const DOWNLOAD_DIR = path.resolve(process.env.DOWNLOAD_DIR || './downloads');
+const DOWNLOAD_DIR = path.resolve(process.env.DOWNLOAD_DIR || '/downloads');
 
 // Ensure the download directory exists on startup
 if (!fs.existsSync(DOWNLOAD_DIR)) {
