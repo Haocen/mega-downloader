@@ -131,7 +131,7 @@
 
             const badge = document.createElement('span');
             badge.className = `badge rounded-pill ${item.success ? 'bg-success' : 'bg-danger'}`;
-            badge.textContent = item.success ? 'Done' : 'Fail';
+            badge.textContent = item.success ? 'Started' : 'Fail';
 
             li.append(textWrapper, badge);
             historyList.appendChild(li);

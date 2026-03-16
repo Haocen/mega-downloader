@@ -59,11 +59,11 @@ router.post('/download', async (ctx, next) => {
 
     ctx.body = { 
       exitCode, 
-      message: exitCode === 0 ? "Download Complete" : `Failed with code ${exitCode}`,
+      message: exitCode === 0 ? "Download Started" : `Failed with code ${exitCode}`,
       path: DOWNLOAD_DIR // Helpful for the UI to know where it went
     };
 
-    console.log(`Download finished for ${link}`);
+    console.log(`Download started for ${link}`);
   } catch (err) {
     console.error(`Download error for ${link}`, err);
     ctx.status = 400;
