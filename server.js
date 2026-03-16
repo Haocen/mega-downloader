@@ -40,17 +40,18 @@ router.post('/download', async (ctx, next) => {
     if (!allowedHosts.includes(parsedUrl.hostname)) {
       ctx.status = 403;
       ctx.body = { error: 'Invalid Host' };
+      console.warn(`Request to download ${link} is invalid`);
       return;
     }
+
+    console.log(`Download start for ${link}`);
 
     const exitCode = await new Promise((resolve, reject) => {
       // Pass the DOWNLOAD_DIR to the 'cwd' option
       const process = spawn('mega-get', [parsedUrl.href, '.'], {
-        cwd: DOWNLOAD_DIR
-      });
-      
-      process.stdout.pipe(process.stdout);
-      process.stderr.pipe(process.stderr);
+        cwd: DOWNLOAD_DIR,
+        stdio: 'inherit',
+      });ß
 
       process.on('close', (code) => resolve(code));
       process.on('error', (err) => reject(err));
@@ -61,6 +62,8 @@ router.post('/download', async (ctx, next) => {
       message: exitCode === 0 ? "Download Complete" : `Failed with code ${exitCode}`,
       path: DOWNLOAD_DIR // Helpful for the UI to know where it went
     };
+
+    console.log(`Download finished for ${link}`);
   } catch (err) {
     ctx.status = 400;
     ctx.body = { error: 'Processing Error', details: err.message };
