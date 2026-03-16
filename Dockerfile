@@ -1,7 +1,7 @@
 # --- Stage 1: Builder ---
 FROM alpine:latest AS builder
 
-# Added bash and curl - often required for MEGA internal scripts
+# We need bash, curl, and all dev-libs
 RUN apk add --no-cache \
     build-base \
     cmake \
@@ -28,19 +28,21 @@ RUN apk add --no-cache \
     gtest-dev
 
 WORKDIR /opt/MEGAcmd
-
-# Clone with submodules
 RUN git clone --recursive https://github.com/meganz/MEGAcmd.git .
 
-# THE "KILL SWITCH": 
-# This prevents the CMake script from trying to clone vcpkg regardless of flags.
-RUN sed -i 's/include(cmake\/vcpkg_check.cmake)/# include(cmake\/vcpkg_check.cmake)/g' CMakeLists.txt
+# THE FIX: 
+# 1. Ensure bash is mapped where scripts expect it (/usr/bin/bash vs /bin/bash)
+# 2. Force the CMake variable to think vcpkg is already found or not needed
+# 3. Use a broad sed to disable the execution of the clone script in CMakeLists.txt
+RUN ln -sf /bin/bash /usr/bin/bash && \
+    sed -i 's/if((NOT WIN32/if(FALSE AND (NOT WIN32/g' CMakeLists.txt
 
-# Now run the build using system libraries
-RUN rm -rf build && mkdir build && cd build && \
+# Run the build
+RUN mkdir build && cd build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DUSE_VCPKG=OFF \
+    -DVCPKG_TARGET_TRIPLET=x64-linux-musl \
     -DENABLE_VARIOUS=ON \
     -DENABLE_DESKTOP_NOTIFICATIONS=OFF \
     -DENABLE_BACKTRACE=OFF \
