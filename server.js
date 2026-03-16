@@ -51,7 +51,7 @@ router.post('/download', async (ctx, next) => {
       const process = spawn('mega-get', [parsedUrl.href, '.'], {
         cwd: DOWNLOAD_DIR,
         stdio: 'inherit',
-      });ß
+      });
 
       process.on('close', (code) => resolve(code));
       process.on('error', (err) => reject(err));
@@ -65,6 +65,7 @@ router.post('/download', async (ctx, next) => {
 
     console.log(`Download finished for ${link}`);
   } catch (err) {
+    console.error(`Download error for ${link}`, err);
     ctx.status = 400;
     ctx.body = { error: 'Processing Error', details: err.message };
   }
