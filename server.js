@@ -1,13 +1,13 @@
-const Koa = require('koa');
-const Router = require('@koa/router');
-const bodyParser = require('koa-bodyparser');
-const serve = require('koa-static');
-const path = require('path');
-const fs = require('fs'); // Added for directory checking
-const process = require('process');
-const { spawn } = require('child_process');
-const { URL } = require('url');
-const { Transform } = require('stream');
+import Koa from 'koa';
+import Router from '@koa/router';
+import bodyParser from 'koa-bodyparser';
+import serve from 'koa-static';
+import path from 'node:path';
+import fs from 'node:fs'; // Added for directory checking
+import process from 'node:process';
+import { spawn } from 'node:child_process';
+import { URL } from 'node:url';
+import { Transform } from 'node:stream';
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -23,7 +23,7 @@ const app = new Koa();
 const router = new Router();
 
 app.use(bodyParser());
-app.use(serve(path.join(__dirname, 'public')));
+app.use(serve(path.join(import.meta.dirname, 'public')));
 
 // Healthcheck endpoint
 router.get('/health', async (ctx, next) => {
