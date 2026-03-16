@@ -30,6 +30,13 @@ RUN apk add --update --no-cache \
 WORKDIR /opt/MEGAcmd
 RUN git clone --recursive https://github.com/meganz/MEGAcmd.git .
 
+# THE "SLEDGEHAMMER":
+# 1. Neutralize the vcpkg management script in the SDK so it doesn't check for VCPKG_ROOT
+RUN echo "" > sdk/cmake/modules/vcpkg_management.cmake
+
+# 2. Neutralize the top-level vcpkg check
+RUN sed -i 's/include(cmake\/vcpkg_check.cmake)/# disabled/g' CMakeLists.txt
+
 # THE FIX: 
 # 1. Ensure bash is mapped where scripts expect it (/usr/bin/bash vs /bin/bash)
 # 2. Force the CMake variable to think vcpkg is already found or not needed
