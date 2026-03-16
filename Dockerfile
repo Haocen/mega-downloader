@@ -2,7 +2,7 @@
 FROM alpine:latest AS builder
 
 # We need bash, curl, and all dev-libs
-RUN apk add --no-cache \
+RUN apk add --update --no-cache \
     build-base \
     cmake \
     git \
@@ -38,7 +38,7 @@ RUN ln -sf /bin/bash /usr/bin/bash && \
     sed -i 's/if((NOT WIN32/if(FALSE AND (NOT WIN32/g' CMakeLists.txt
 
 # Run the build
-RUN mkdir build && cd build && \
+RUN mkdir -p build && cd build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DUSE_VCPKG=OFF \
