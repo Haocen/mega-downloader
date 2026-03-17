@@ -8,11 +8,14 @@ import process from 'node:process';
 import { spawn } from 'node:child_process';
 import { URL } from 'node:url';
 import { Transform } from 'node:stream';
+import { v4 as uuidv4 } from 'uuid';
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 // New: Resolve the download directory from env
 const DOWNLOAD_DIR = path.resolve(process.env.DOWNLOAD_DIR || '/downloads');
+const JOB_MAX_AGE_SECONDS = process.env.JOB_MAX_AGE_SECONDS || 60 * 60 * 10;
+const JOB_SYNC_WAIT_SECONDS = process.env.JOB_SYNC_WAIT_SECONDS || 5;
 
 // Ensure the download directory exists on startup
 if (!fs.existsSync(DOWNLOAD_DIR)) {
@@ -33,26 +36,47 @@ router.get('/health', async (ctx, next) => {
 });
 
 
-// In-memory store using PID as the key
-// const downloadJobs = new Map();
+// In-memory store using uid as the key
+const jobsUidToStatusMap = new Map();
 
 /**
  * Creates a Transform stream that extracts percentages 
  * and updates the job store before piping to stdout.
  */
-function createChildProcessTransform(pid) {
+function createChildProcessTransform(pid, uid) {
   return new Transform({
     transform(chunk, encoding, callback) {
       const data = chunk.toString();
 
-      // Update the progress in our Map if we find a percentage
-      // const match = data.match(/(\d+\.?\d*\s*%)/);
-      // if (match && downloadJobs.has(pid)) {
-      //   downloadJobs.get(pid).progress = match[0].trim();
-      // }
+      let jobStatus = jobsUidToStatusMap.get(uid) || {};
+      let updated = false;
+
+      const parsedLines = data.split(/[\r\n]+/);
+      for (const line of parsedLines) {
+        const transferMatch = line.match(/\(([\d.]+)\/([\d.]+) MB:\s+([\d.]+)\s*%\)/);
+        if (transferMatch) {
+          jobStatus.downloadedSize = Number(transferMatch[1]);
+          jobStatus.overallSize = Number(transferMatch[2]);
+          jobStatus.percentage = Number(transferMatch[3]);
+          jobStatus.status = 'downloading';
+          updated = true;
+        }
+
+        const finishedMatch = line.match(/Download finished:\s*(.+)$/);
+        if (finishedMatch) {
+          const fullPath = finishedMatch?.[1]?.trim();
+          jobStatus.fileName = fullPath?.split(/[/\\]/)?.pop();
+          jobStatus.status = 'finished';
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        jobsUidToStatusMap.set(uid, jobStatus);
+      }
 
       // Prefix child process with pid
-      const lines = (encoding === 'utf8' ? chunk : chunk.toString()).split('\n');
+      const lines = (encoding === 'utf8' ? chunk : data).split('\n');
       callback(null, lines.map(line => line.trim().length > 0 ? `\t[pid: ${pid}]${line}` : line).join(`\n`));
     }
   });
@@ -72,9 +96,11 @@ router.post('/download', async (ctx, next) => {
       return;
     }
 
-    console.log(`Download start for ${link}`);
+    const uid = uuidv4();
 
-    const exitCode = await new Promise((resolve, reject) => {
+    console.log(`Download start for ${link} with task uid ${uid}`);
+
+    const downloadPromise = new Promise((resolve, reject) => {
       // Pass the DOWNLOAD_DIR to the 'cwd' option
       const childProcess = spawn('mega-get', [parsedUrl.href, '.'], {
         cwd: DOWNLOAD_DIR,
@@ -85,25 +111,89 @@ router.post('/download', async (ctx, next) => {
         ],
       });
 
-      childProcess.stdout.pipe(createChildProcessTransform(childProcess?.pid)).pipe(process.stdout, { end: false });
-      childProcess.stderr.pipe(createChildProcessTransform(childProcess?.pid)).pipe(process.stderr, { end: false });
+      childProcess.on('spawn', () => {
+        let jobStatus = jobsUidToStatusMap.get(uid) || {};
+        jobStatus.status = 'active';
+        jobsUidToStatusMap.set(uid, jobStatus);
+      });
 
-      childProcess.on('close', (code) => resolve(code));
-      childProcess.on('error', (err) => reject(err));
+      childProcess.stdout.pipe(createChildProcessTransform(childProcess?.pid, uid)).pipe(process.stdout, { end: false });
+      childProcess.stderr.pipe(createChildProcessTransform(childProcess?.pid, uid)).pipe(process.stderr, { end: false });
+
+
+      childProcess.on('close', (code) => {
+        let jobStatus = jobsUidToStatusMap.get(uid) || {};
+        jobStatus.exitCode = code;
+        jobStatus.status = code !== 0 ? 'failed' : 'success';
+        jobsUidToStatusMap.set(uid, jobStatus);
+
+        setTimeout(() => {
+          jobsUidToStatusMap.delete(uid);
+        }, JOB_MAX_AGE_SECONDS * 1000);
+        resolve(code);
+      });
+      childProcess.on('error', (err) => {
+        let jobStatus = jobsUidToStatusMap.get(uid) || {};
+        jobStatus.status = 'error';
+        jobStatus.error = err.message || err;
+        jobsUidToStatusMap.set(uid, jobStatus);
+        reject(err);
+      });
     });
 
-    ctx.body = {
-      exitCode,
-      message: exitCode === 0 ? "Download Finished" : `Failed with code ${exitCode}`,
-      path: DOWNLOAD_DIR // Helpful for the UI to know where it went
-    };
+    const timeoutPromise = new Promise((resolve) => {
+      setTimeout(() => resolve(undefined), JOB_SYNC_WAIT_SECONDS * 1000);
+    });
 
-    console.log(`Download finished for ${link}`);
+    const exitCode = await Promise.race([downloadPromise, timeoutPromise]);
+
+    if (exitCode === undefined) {
+      ctx.body = {
+        ...jobsUidToStatusMap.get(uid),
+        exitCode: undefined,
+        message: 'Download Started',
+        path: DOWNLOAD_DIR,
+        uid: uid,
+      };
+      console.log(`Download started in background for ${link}`);
+    } else {
+      ctx.body = {
+        ...jobsUidToStatusMap.get(uid),
+        exitCode,
+        message: exitCode === 0 ? "Download Finished" : `Failed with code ${exitCode}`,
+        path: DOWNLOAD_DIR, // Helpful for the UI to know where it went
+        uid: uid,
+      };
+      console.log(`Download finished for ${link}`);
+    }
   } catch (err) {
     console.error(`Download error for ${link}`, err);
     ctx.status = 400;
     ctx.body = { error: 'Processing Error', details: err.message };
   }
+  await next();
+});
+
+router.post('/query', async (ctx, next) => {
+  const body = ctx.request.body || {};
+  const uids = Array.isArray(body) ? body : body.uids;
+
+  if (!Array.isArray(uids)) {
+    ctx.status = 400;
+    ctx.body = { error: 'Please provide an array of uids' };
+    await next();
+    return;
+  }
+
+  const results = uids.map(uid => {
+    const jobStatus = jobsUidToStatusMap.get(uid);
+    if (!jobStatus) {
+      return { uid, status: 'notfound' };
+    }
+    return { uid, ...jobStatus };
+  });
+
+  ctx.body = results;
   await next();
 });
 

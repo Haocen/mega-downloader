@@ -1,148 +1,340 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MEGA Downloader</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        :root { --mega-red: #d92128; }
-        body { 
-            background-color: #f0f2f5; 
-            min-height: 100vh; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
+        :root {
+            --mega-red: #d92128;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin: 0;
             font-family: system-ui, -apple-system, sans-serif;
         }
-        .container { display: flex; justify-content: center; width: 100%; padding: 20px; }
-        .card { 
-            border: none; border-radius: 16px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
-            width: 100%; max-width: 550px; background: #fff; padding: 2rem;
+
+        .container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            padding: 20px;
         }
-        .btn-primary { background-color: var(--mega-red); border-color: var(--mega-red); }
-        .btn-primary:hover { background-color: #b01a1f; border-color: #b01a1f; }
-        .history-list { max-height: 300px; overflow-y: auto; border-radius: 8px; margin-top: 1rem; }
-        .list-group-item { font-size: 0.9rem; border-left: none; border-right: none; }
+
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 550px;
+            background: #fff;
+            padding: 2rem;
+        }
+
+        .btn-primary {
+            background-color: var(--mega-red);
+            border-color: var(--mega-red);
+        }
+
+        .btn-primary:hover {
+            background-color: #b01a1f;
+            border-color: #b01a1f;
+        }
+
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .list-group-item {
+            font-size: 0.9rem;
+            border-left: none;
+            border-right: none;
+        }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <div class="card">
-        <h3 class="text-center mb-4">🚀 MEGA Remote Get</h3>
-        
-        <form id="downloadForm">
-            <div class="input-group mb-3">
-                <input type="text" id="megaLink" class="form-control form-control-lg" placeholder="https://mega.nz/..." required>
-                <button class="btn btn-primary px-4" type="submit" id="submitBtn">Download</button>
+    <div class="container">
+        <div class="card">
+            <h3 class="text-center mb-4">🚀 MEGA Remote Get</h3>
+
+            <form id="downloadForm">
+                <div class="input-group mb-3">
+                    <input type="text" id="megaLink" class="form-control form-control-lg"
+                        placeholder="https://mega.nz/..." required>
+                    <button class="btn btn-primary px-4" type="submit" id="submitBtn">Download</button>
+                </div>
+            </form>
+
+            <hr>
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Recent Activity</h6>
+                <button class="btn btn-sm btn-outline-secondary" id="clearBtn">Clear</button>
             </div>
-        </form>
-
-        <hr>
-        <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">Recent Activity</h6>
-            <button class="btn btn-sm btn-outline-secondary" id="clearBtn">Clear</button>
+            <ul class="list-group history-list" id="historyList"></ul>
         </div>
-        <ul class="list-group history-list" id="historyList"></ul>
     </div>
-</div>
 
-<script>
-    const form = document.getElementById('downloadForm');
-    const input = document.getElementById('megaLink');
-    const btn = document.getElementById('submitBtn');
-    const historyList = document.getElementById('historyList');
-    const clearBtn = document.getElementById('clearBtn');
+    <script>
+        const form = document.getElementById('downloadForm');
+        const input = document.getElementById('megaLink');
+        const btn = document.getElementById('submitBtn');
+        const historyList = document.getElementById('historyList');
+        const clearBtn = document.getElementById('clearBtn');
 
-    // Initial load
-    renderHistory();
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const link = input.value.trim();
-        if (!link) return;
-
-        // Lockdown UI
-        input.disabled = true;
-        btn.disabled = true;
-        const originalText = btn.textContent;
-        btn.textContent = 'Started'; 
-
-        try {
-            const response = await fetch('/download', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ link })
-            });
-            const data = await response.json();
-            
-            saveToHistory({ 
-                link, 
-                success: data.exitCode === 0, 
-                message: data.message,
-                time: new Date().toLocaleTimeString() 
-            });
-
-        } catch (err) {
-            saveToHistory({ link, success: false, message: "Network Error", time: "" });
-        } finally {
-            input.disabled = false;
-            btn.disabled = false;
-            btn.textContent = originalText;
-            input.value = '';
-            renderHistory();
-        }
-    });
-
-    function saveToHistory(item) {
-        const history = JSON.parse(localStorage.getItem('mega_history') || '[]');
-        history.unshift(item);
-        localStorage.setItem('mega_history', JSON.stringify(history.slice(0, 10)));
-    }
-
-    function renderHistory() {
-        // Clear children safely
-        while (historyList.firstChild) {
-            historyList.removeChild(historyList.firstChild);
-        }
-
-        const history = JSON.parse(localStorage.getItem('mega_history') || '[]');
-        
-        history.forEach(item => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center';
-
-            const textWrapper = document.createElement('div');
-            textWrapper.className = 'text-truncate px-2';
-            
-            const strong = document.createElement('strong');
-            strong.textContent = item.message;
-            
-            const br = document.createElement('br');
-            
-            const small = document.createElement('small');
-            small.className = 'text-muted';
-            small.textContent = item.link;
-
-            textWrapper.append(strong, br, small);
-
-            const badge = document.createElement('span');
-            badge.className = `badge rounded-pill ${item.success ? 'bg-success' : 'bg-danger'}`;
-            badge.textContent = item.success ? 'Finished' : 'Fail';
-
-            li.append(textWrapper, badge);
-            historyList.appendChild(li);
-        });
-    }
-
-    clearBtn.onclick = () => {
-        localStorage.removeItem('mega_history');
+        // Initial load
         renderHistory();
-    };
-</script>
+
+        // Polling interval reference
+        let surveyInterval = null;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const link = input.value.trim();
+            if (!link) return;
+
+            // Lockdown UI
+            input.disabled = true;
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = 'Started';
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ link })
+                });
+                const data = await response.json();
+
+                const isFinished = ['failed', 'success', 'notfound'].includes(data.status);
+
+                saveToHistory({
+                    uid: data.uid,
+                    status: data.status,
+                    link: link,
+                    success: data.exitCode === 0,
+                    message: data.message,
+                    percentage: data.percentage || 0,
+                    downloadedSize: data.downloadedSize || 0,
+                    overallSize: data.overallSize || 0,
+                    fileName: data.fileName || '',
+                    exitCode: data.exitCode,
+                    error: data.error,
+                    time: new Date().toLocaleTimeString()
+                });
+
+                if (!isFinished) {
+                    startPolling();
+                }
+
+            } catch (err) {
+                saveToHistory({ uid: 'err', link, success: false, message: "Network Error", time: "" });
+            } finally {
+                input.disabled = false;
+                btn.disabled = false;
+                btn.textContent = originalText;
+                input.value = '';
+                renderHistory();
+            }
+        });
+
+        function saveToHistory(item) {
+            const history = JSON.parse(localStorage.getItem('mega_history') || '[]');
+
+            // Update existing item if it has a uid, otherwise unshift
+            const existingIndex = history.findIndex(h => h.uid === item.uid && h.uid !== 'err');
+            if (existingIndex >= 0) {
+                history[existingIndex] = item;
+            } else {
+                history.unshift(item);
+            }
+
+            localStorage.setItem('mega_history', JSON.stringify(history.slice(0, 10)));
+        }
+
+        function renderHistory() {
+            // Clear children safely
+            while (historyList.firstChild) {
+                historyList.removeChild(historyList.firstChild);
+            }
+
+            const history = JSON.parse(localStorage.getItem('mega_history') || '[]');
+
+            history.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+
+                const dFlex = document.createElement('div');
+                dFlex.className = 'd-flex justify-content-between align-items-start';
+
+                const textWrapper = document.createElement('div');
+                textWrapper.className = 'text-truncate pe-2 flex-grow-1';
+
+                const strong = document.createElement('strong');
+                const isDownloading = item.status === 'downloading' || item.status === 'active';
+
+                if (isDownloading) {
+                    strong.textContent = `Downloading... (${item.downloadedSize || 0} MB / ${item.overallSize || 0} MB)`;
+                } else if (item.status === 'failed') {
+                    strong.textContent = `Failed (Exit Code: ${item.exitCode !== undefined ? item.exitCode : 'N/A'})${item.error ? ' - ' + item.error : ''}`;
+                } else if (item.status === 'error') {
+                    strong.textContent = `Error: ${item.error || 'Unknown'}`;
+                } else {
+                    strong.textContent = item.status === 'success' ? 'Download Finished' : (item.message || 'Finished');
+                }
+                textWrapper.appendChild(strong);
+                textWrapper.appendChild(document.createElement('br'));
+
+                if (item.message) {
+                    const subtitle = document.createElement('small');
+                    subtitle.className = 'text-muted';
+                    subtitle.textContent = item.message;
+                    textWrapper.appendChild(subtitle);
+                    textWrapper.appendChild(document.createElement('br'));
+                }
+
+                const small = document.createElement('small');
+                small.className = 'text-muted';
+                if ((item.status === 'success' || item.success) && item.fileName) {
+                    small.textContent = item.fileName;
+                } else {
+                    small.textContent = item.link;
+                }
+                small.title = item.link;
+
+                textWrapper.appendChild(small);
+
+                const badge = document.createElement('span');
+                badge.className = `badge rounded-pill mt-1 ${item.success ? 'bg-success' : (isDownloading ? 'bg-warning text-dark' : 'bg-danger')}`;
+
+                if (isDownloading) {
+                    badge.textContent = 'Active';
+                } else {
+                    badge.textContent = item.success ? 'Finished' : 'Fail';
+                }
+
+                dFlex.append(textWrapper, badge);
+                li.appendChild(dFlex);
+
+                if (isDownloading) {
+                    const progressContainer = document.createElement('div');
+                    progressContainer.className = 'progress mt-2';
+                    progressContainer.style.height = '15px';
+
+                    const pct = item.percentage || 0;
+
+                    const progressBar = document.createElement('div');
+                    progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated';
+                    progressBar.role = 'progressbar';
+                    progressBar.style.width = `${pct}%`;
+                    progressBar.setAttribute('aria-valuenow', pct);
+                    progressBar.setAttribute('aria-valuemin', '0');
+                    progressBar.setAttribute('aria-valuemax', '100');
+                    progressBar.textContent = `${pct}%`;
+
+                    progressContainer.appendChild(progressBar);
+                    li.appendChild(progressContainer);
+                }
+
+                historyList.appendChild(li);
+            });
+        }
+
+        async function pollStatus() {
+            const history = JSON.parse(localStorage.getItem('mega_history') || '[]');
+            const activeJobs = history
+                .filter(item => ['downloading', 'active'].includes(item.status))
+                .map(item => item.uid);
+
+            if (activeJobs.length === 0) {
+                clearInterval(surveyInterval);
+                surveyInterval = null;
+                return;
+            }
+
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uids: activeJobs })
+                });
+                const statuses = await response.json();
+
+                let updated = false;
+                // Fetch fresh history explicitly in case it was updated concurrently
+                const currentHistory = JSON.parse(localStorage.getItem('mega_history') || '[]');
+
+                statuses.forEach(job => {
+                    const existingIndex = currentHistory.findIndex(h => h.uid === job.uid);
+
+                    if (existingIndex !== -1) {
+                        const existingItem = currentHistory[existingIndex];
+                        currentHistory[existingIndex] = {
+                            ...existingItem,
+                            status: job.status,
+                            success: job.exitCode === 0 || job.status === 'success',
+                            message: job.message || existingItem.message,
+                            percentage: job.percentage !== undefined ? job.percentage : existingItem.percentage || 0,
+                            downloadedSize: job.downloadedSize !== undefined ? job.downloadedSize : existingItem.downloadedSize || 0,
+                            overallSize: job.overallSize !== undefined ? job.overallSize : existingItem.overallSize || 0,
+                            fileName: job.fileName || existingItem.fileName || '',
+                            exitCode: job.exitCode !== undefined ? job.exitCode : existingItem.exitCode,
+                            error: job.error || existingItem.error
+                        };
+                        updated = true;
+                    }
+                });
+
+                if (updated) {
+                    localStorage.setItem('mega_history', JSON.stringify(currentHistory));
+                    renderHistory();
+                }
+
+            } catch (err) {
+                console.error("Failed to poll status", err);
+            }
+        }
+
+        function startPolling() {
+            if (!surveyInterval) {
+                surveyInterval = setInterval(pollStatus, 2000);
+            }
+        }
+
+        // Recover active jobs on initial load
+        function initActiveJobs() {
+            const history = JSON.parse(localStorage.getItem('mega_history') || '[]');
+            const hasActiveJobs = history.some(item => ['downloading', 'active'].includes(item.status));
+
+            if (hasActiveJobs) {
+                startPolling();
+            }
+        }
+
+        initActiveJobs();
+
+        clearBtn.onclick = () => {
+            localStorage.removeItem('mega_history');
+            if (surveyInterval) {
+                clearInterval(surveyInterval);
+                surveyInterval = null;
+            }
+            renderHistory();
+        };
+    </script>
 
 </body>
+
 </html>
