@@ -59,6 +59,7 @@ function createChildProcessTransform(pid, uid) {
           jobStatus.overallSize = Number(transferMatch[2]);
           jobStatus.percentage = Number(transferMatch[3]);
           jobStatus.status = 'downloading';
+          jobStatus.updateTimestamp = new Date();
           updated = true;
         }
 
@@ -67,6 +68,7 @@ function createChildProcessTransform(pid, uid) {
           const fullPath = finishedMatch?.[1]?.trim();
           jobStatus.fileName = fullPath?.split(/[/\\]/)?.pop();
           jobStatus.status = 'finished';
+          jobStatus.updateTimestamp = new Date();
           updated = true;
         }
       }
@@ -114,6 +116,8 @@ router.post('/download', async (ctx, next) => {
       childProcess.on('spawn', () => {
         let jobStatus = jobsUidToStatusMap.get(uid) || {};
         jobStatus.status = 'active';
+        jobStatus.startTimestamp = new Date();
+        jobStatus.updateTimestamp = new Date();
         jobsUidToStatusMap.set(uid, jobStatus);
       });
 
@@ -125,6 +129,9 @@ router.post('/download', async (ctx, next) => {
         let jobStatus = jobsUidToStatusMap.get(uid) || {};
         jobStatus.exitCode = code;
         jobStatus.status = code !== 0 ? 'failed' : 'success';
+        jobStatus.message = code !== 0 ? 'Download Failed' : 'Download Finished';
+        jobStatus.endTimestamp = new Date();
+        jobStatus.updateTimestamp = new Date();
         jobsUidToStatusMap.set(uid, jobStatus);
 
         setTimeout(() => {
@@ -135,7 +142,9 @@ router.post('/download', async (ctx, next) => {
       childProcess.on('error', (err) => {
         let jobStatus = jobsUidToStatusMap.get(uid) || {};
         jobStatus.status = 'error';
+        jobStatus.message = 'Download Error';
         jobStatus.error = err.message || err;
+        jobStatus.updateTimestamp = new Date();
         jobsUidToStatusMap.set(uid, jobStatus);
         reject(err);
       });

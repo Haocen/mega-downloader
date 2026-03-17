@@ -132,7 +132,10 @@
                     fileName: data.fileName || '',
                     exitCode: data.exitCode,
                     error: data.error,
-                    time: new Date().toLocaleTimeString()
+                    time: new Date().toLocaleTimeString(),
+                    startTimestamp: data.startTimestamp,
+                    endTimestamp: data.endTimestamp,
+                    updateTimestamp: data.updateTimestamp,
                 });
 
                 if (!isFinished) {
@@ -197,10 +200,26 @@
                 textWrapper.appendChild(strong);
                 textWrapper.appendChild(document.createElement('br'));
 
+                /*
                 if (item.message) {
                     const subtitle = document.createElement('small');
                     subtitle.className = 'text-muted';
                     subtitle.textContent = item.message;
+                    textWrapper.appendChild(subtitle);
+                    textWrapper.appendChild(document.createElement('br'));
+                }
+                */
+
+                if (item.endTimestamp && !Number.isNaN(new Date(item.endTimestamp).getTime())) {
+                    const subtitle = document.createElement('small');
+                    subtitle.className = 'text-muted';
+                    subtitle.textContent = `Finished at ${new Date(item.endTimestamp).toLocaleString()}`;
+                    textWrapper.appendChild(subtitle);
+                    textWrapper.appendChild(document.createElement('br'));
+                } else if (item.startTimestamp && !Number.isNaN(new Date(item.startTimestamp).getTime())) {
+                    const subtitle = document.createElement('small');
+                    subtitle.className = 'text-muted';
+                    subtitle.textContent = `Started at ${new Date(item.startTimestamp).toLocaleString()}`;
                     textWrapper.appendChild(subtitle);
                     textWrapper.appendChild(document.createElement('br'));
                 }
