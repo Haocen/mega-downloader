@@ -1,8 +1,10 @@
 # 🚀 MEGA Remote Downloader
 
+<img width="1442" height="1284" alt="image" src="https://github.com/user-attachments/assets/44809c40-b1ec-437c-a9c1-40685a6e82a7" />
+
 A secure, lightweight Koa.js server wrapped in Docker that allows you to trigger `mega-get` downloads via a web interface.
 
-> **Disclaimer:** This program was designed and authored by Gemini (an AI collaborator). It is provided "as is," without warranty of any kind. Use it responsibly and ensure you comply with MEGA's terms of service.
+> **Disclaimer:** This program was designed and authored by Gemini (an AI collaborator) with the help of Antigravity IDE. It is provided "as is," without warranty of any kind. Use it responsibly and ensure you comply with MEGA's terms of service.
 
 ---
 
