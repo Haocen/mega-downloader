@@ -10,7 +10,7 @@ A secure, lightweight Koa.js server wrapped in Docker that allows you to trigger
 * **Secure Command Execution:** Uses `child_process.spawn` to prevent bash injection.
 * **URL Validation:** Strict hostname checking to ensure only MEGA links are processed.
 * **Permissions Control:** Supports `PUID` and `PGID` to match host file system permissions.
-* **Dockerized:** Built on Alpine Linux for a minimal footprint.
+* **Dockerized:** Built on Debian Linux for a minimal footprint.
 * **Modern UI:** A clean, Bootstrap 5 interface with local storage history.
 
 ---
