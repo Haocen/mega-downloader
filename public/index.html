@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MEGA Downloader</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="/favicon.png">
     <style>
         :root {
@@ -13,7 +13,7 @@
         }
 
         body {
-            background-color: #f0f2f5;
+            background-color: var(--bs-body-secondary-bg);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -35,7 +35,6 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
             width: 100%;
             max-width: 550px;
-            background: #fff;
             padding: 2rem;
         }
 
@@ -61,12 +60,65 @@
             border-left: none;
             border-right: none;
         }
+
+        #dark-mode-toggle {
+            position: absolute;
+            top: .5rem;
+            right: .5rem;
+            z-index: 2;
+            --dark-mode-toggle-light-icon: url('/img/fa-sun.svg');
+            --dark-mode-toggle-dark-icon: url('/img/fa-moon.svg');
+            --dark-mode-toggle-system-icon: url('/img/fa-yin-yang.svg');
+        }
     </style>
+    <script type="module" src="/js/dark-mode-toggle.mjs" async defer></script>
+    <script>
+        try {
+            var _colorScheme = window.localStorage.getItem("dark-mode-toggle");
+            var colorScheme = _colorScheme === "light" || _colorScheme === "dark" || _colorScheme === "auto" ? _colorScheme : "auto";
+            var computedColorScheme = colorScheme !== "auto" ? colorScheme : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            switch (computedColorScheme) {
+                case 'dark':
+                case 'light':
+                    window.document.documentElement.setAttribute('data-bs-theme', computedColorScheme);
+                    break;
+                default:
+                    window.document.documentElement.removeAttribute('data-bs-theme');
+                    break;
+            }
+        } catch (e) { }
+
+        const switchDarkMode = (colorScheme) => {
+            switch (colorScheme) {
+                case 'dark':
+                    window.document.documentElement.dataset.bsTheme = 'dark';
+                    break;
+                case 'light':
+                default:
+                    delete window.document.documentElement.dataset.bsTheme;
+                    break;
+            }
+        };
+
+        const switchDarkModeBasedOnToggle = () => {
+            const darkModeToggleElement = document.querySelector('#dark-mode-toggle');
+            if (darkModeToggleElement instanceof HTMLElement) {
+                switchDarkMode(darkModeToggleElement.mode);
+            }
+        };
+
+        switchDarkModeBasedOnToggle();
+
+        window.document.addEventListener('colorschemechange', (event) => {
+            switchDarkMode(event.detail.colorScheme);
+        });
+    </script>
 </head>
 
 <body>
 
     <div class="container">
+        <dark-mode-toggle id="dark-mode-toggle" appearance="three-way"></dark-mode-toggle>
         <div class="card">
             <h3 class="text-center mb-4">🚀 MEGA Remote Get</h3>
 
