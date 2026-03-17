@@ -1,6 +1,6 @@
 # 🚀 MEGA Remote Downloader
 
-<img width="1442" height="1284" alt="image" src="https://github.com/user-attachments/assets/44809c40-b1ec-437c-a9c1-40685a6e82a7" />
+<img width="1672" height="1370" alt="image" src="https://github.com/user-attachments/assets/c94241cc-597a-47eb-9b6b-98750b65bac3" />
 
 A secure, lightweight Koa.js server wrapped in Docker that allows you to trigger `mega-get` downloads via a web interface.
 
