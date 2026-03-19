@@ -15,6 +15,12 @@ class MegaJob extends HTMLElement {
     }
 
     connectedCallback() {
+        if (this.hasOwnProperty('job')) {
+            const value = this.job;
+            delete this.job;
+            this.job = value;
+        }
+
         if (this.#job) {
             this.#renderInnerContent();
         }
