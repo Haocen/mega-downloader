@@ -3,7 +3,6 @@ class MegaJob extends HTMLElement {
 
     constructor() {
         super();
-        this.classList.add('list-group-item');
     }
 
     set job(item) {
@@ -27,6 +26,8 @@ class MegaJob extends HTMLElement {
         const isDownloading = item.status === 'downloading' || item.status === 'active';
 
         if (!this._initialized) {
+            this.classList.add('list-group-item');
+
             const dFlex = document.createElement('div');
             dFlex.className = 'd-flex justify-content-between align-items-start';
 
