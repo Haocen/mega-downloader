@@ -72,6 +72,7 @@
         }
     </style>
     <script type="module" src="/js/dark-mode-toggle.mjs" async defer></script>
+    <script type="module" src="/job.mjs" async defer></script>
     <script>
         try {
             var _colorScheme = window.localStorage.getItem("dark-mode-toggle");
@@ -140,7 +141,7 @@
     </div>
 
     <script>
-        const POLL_INTERVAL_IN_MS = 2000;
+        const POLL_INTERVAL_IN_MS = 1000;
         const form = document.getElementById('downloadForm');
         const input = document.getElementById('megaLink');
         const btn = document.getElementById('submitBtn');
@@ -197,7 +198,7 @@
                 }
 
             } catch (err) {
-                saveToHistory({ uid: 'err', link, success: false, message: "Network Error", time: "" });
+                saveToHistory({ uid: 'err_' + Date.now() + link, link, success: false, message: "Network Error", time: "" });
             } finally {
                 input.disabled = false;
                 btn.disabled = false;
@@ -211,7 +212,7 @@
             const history = JSON.parse(localStorage.getItem('mega_history') || '[]');
 
             // Update existing item if it has a uid, otherwise unshift
-            const existingIndex = history.findIndex(h => h.uid === item.uid && h.uid !== 'err');
+            const existingIndex = history.findIndex(h => h.uid === item.uid && !String(h.uid).startsWith('err'));
             if (existingIndex >= 0) {
                 history[existingIndex] = item;
             } else {
@@ -222,106 +223,27 @@
         }
 
         function renderHistory() {
-            // Clear children safely
-            while (historyList.firstChild) {
-                historyList.removeChild(historyList.firstChild);
-            }
-
             const history = JSON.parse(localStorage.getItem('mega_history') || '[]');
 
-            history.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'list-group-item';
-
-                const dFlex = document.createElement('div');
-                dFlex.className = 'd-flex justify-content-between align-items-start';
-
-                const textWrapper = document.createElement('div');
-                textWrapper.className = 'text-truncate pe-2 flex-grow-1';
-
-                const strong = document.createElement('strong');
-                const isDownloading = item.status === 'downloading' || item.status === 'active';
-
-                if (isDownloading) {
-                    strong.textContent = `Downloading... (${item.downloadedSize || 0} MB / ${item.overallSize || 0} MB)`;
-                } else if (item.status === 'failed') {
-                    strong.textContent = `Failed (Exit Code: ${item.exitCode !== undefined ? item.exitCode : 'N/A'})${item.error ? ' - ' + item.error : ''}`;
-                } else if (item.status === 'error') {
-                    strong.textContent = `Error: ${item.error || 'Unknown'}`;
-                } else {
-                    strong.textContent = item.status === 'success' ? 'Download Finished' : (item.message || 'Finished');
+            const validUids = history.map(item => String(item.uid));
+            Array.from(historyList.children).forEach(child => {
+                if (!validUids.includes(child.dataset.uid)) {
+                    child.remove();
                 }
-                textWrapper.appendChild(strong);
-                textWrapper.appendChild(document.createElement('br'));
+            });
 
-                /*
-                if (item.message) {
-                    const subtitle = document.createElement('small');
-                    subtitle.className = 'text-muted';
-                    subtitle.textContent = item.message;
-                    textWrapper.appendChild(subtitle);
-                    textWrapper.appendChild(document.createElement('br'));
-                }
-                */
-
-                if (item.endTimestamp && !Number.isNaN(new Date(item.endTimestamp).getTime())) {
-                    const subtitle = document.createElement('small');
-                    subtitle.className = 'text-muted';
-                    subtitle.textContent = `Finished at ${new Date(item.endTimestamp).toLocaleString()}`;
-                    textWrapper.appendChild(subtitle);
-                    textWrapper.appendChild(document.createElement('br'));
-                } else if (item.startTimestamp && !Number.isNaN(new Date(item.startTimestamp).getTime())) {
-                    const subtitle = document.createElement('small');
-                    subtitle.className = 'text-muted';
-                    subtitle.textContent = `Started at ${new Date(item.startTimestamp).toLocaleString()}`;
-                    textWrapper.appendChild(subtitle);
-                    textWrapper.appendChild(document.createElement('br'));
+            history.forEach((item, index) => {
+                let jobElement = historyList.querySelector(`mega-job[data-uid="${item.uid}"]`);
+                if (!jobElement) {
+                    jobElement = document.createElement('mega-job');
+                    jobElement.dataset.uid = item.uid;
                 }
 
-                const small = document.createElement('small');
-                small.className = 'text-muted';
-                if ((item.status === 'success' || item.success) && item.fileName) {
-                    small.textContent = item.fileName;
-                } else {
-                    small.textContent = item.link;
+                jobElement.job = item;
+
+                if (historyList.children[index] !== jobElement) {
+                    historyList.insertBefore(jobElement, historyList.children[index]);
                 }
-                small.title = item.link;
-
-                textWrapper.appendChild(small);
-
-                const badge = document.createElement('span');
-                badge.className = `badge rounded-pill mt-1 ${item.success ? 'bg-success' : (isDownloading ? 'bg-warning text-dark' : 'bg-danger')}`;
-
-                if (isDownloading) {
-                    badge.textContent = 'Active';
-                } else {
-                    badge.textContent = item.success ? 'Finished' : 'Fail';
-                }
-
-                dFlex.append(textWrapper, badge);
-                li.appendChild(dFlex);
-
-                if (isDownloading) {
-                    const progressContainer = document.createElement('div');
-                    progressContainer.className = 'progress mt-2';
-                    progressContainer.style.height = '15px';
-
-                    const pct = item.percentage || 0;
-
-                    const progressBar = document.createElement('div');
-                    progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-danger';
-                    progressBar.role = 'progressbar';
-                    progressBar.style.width = `${pct}%`;
-                    progressBar.setAttribute('aria-valuenow', pct);
-                    progressBar.setAttribute('aria-valuemin', '0');
-                    progressBar.setAttribute('aria-valuemax', '100');
-                    progressBar.textContent = `${pct}%`;
-
-                    progressContainer.appendChild(progressBar);
-                    li.appendChild(progressContainer);
-                }
-
-                historyList.appendChild(li);
             });
         }
 
