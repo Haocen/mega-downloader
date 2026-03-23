@@ -151,8 +151,8 @@
         // Initial load
         renderHistory();
 
-        // Polling interval reference
-        let pollInterval = null;
+        // Polling timeout reference
+        let pollTimeout = null;
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -254,8 +254,7 @@
                 .map(item => item.uid);
 
             if (activeJobs.length === 0) {
-                clearInterval(pollInterval);
-                pollInterval = null;
+                pollTimeout = null;
                 return;
             }
 
@@ -300,11 +299,14 @@
             } catch (err) {
                 console.error("Failed to poll status", err);
             }
+
+            // Schedule next poll only after current one finishes
+            pollTimeout = setTimeout(pollStatus, POLL_INTERVAL_IN_MS);
         }
 
         function startPolling() {
-            if (!pollInterval) {
-                pollInterval = setInterval(pollStatus, POLL_INTERVAL_IN_MS);
+            if (!pollTimeout) {
+                pollTimeout = setTimeout(pollStatus, 0);
             }
         }
 
@@ -322,9 +324,9 @@
 
         clearBtn.onclick = () => {
             localStorage.removeItem('mega_history');
-            if (pollInterval) {
-                clearInterval(pollInterval);
-                pollInterval = null;
+            if (pollTimeout) {
+                clearTimeout(pollTimeout);
+                pollTimeout = null;
             }
             renderHistory();
         };
