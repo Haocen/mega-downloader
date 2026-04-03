@@ -141,7 +141,7 @@ class MegaJob extends HTMLElement {
             this._progress.setAttribute('aria-valuenow', pct);
             this._progress.textContent = `${pct}%`;
         } else {
-            this._badge.textContent = item.success ? 'Finished' : 'Failed';
+            this._badge.textContent = item.success ? 'Finished' : (item.status || 'Failed');
             this._progressContainer.style.display = 'none';
         }
     }
