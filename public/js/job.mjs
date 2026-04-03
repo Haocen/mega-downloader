@@ -112,7 +112,26 @@ class MegaJob extends HTMLElement {
         }
         this._link.title = item.link;
 
-        this._badge.className = `badge rounded-pill mt-1 job-badge ${item.success ? 'bg-success' : (isDownloading ? 'bg-warning text-dark' : 'bg-danger')}`;
+        let badgeColor;
+        switch (true) {
+            case item.success:
+                badgeColor = 'text-bg-danger';
+                break;
+            case item.status === 'downloading':
+                badgeColor = 'text-bg-primary';
+                break;
+            case item.status === 'active':
+                badgeColor = 'text-bg-secondary';
+                break;
+            case item.status === 'error':
+            case item.status === 'notfound':
+                badgeColor = 'text-bg-light';
+                break;
+            default:
+                badgeColor = 'text-bg-dark';
+                break;
+        }
+        this._badge.className = `badge rounded-pill mt-1 job-badge ${badgeColor}`;
 
         if (isDownloading) {
             this._badge.textContent = 'Active';
