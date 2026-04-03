@@ -71,6 +71,13 @@ function createChildProcessTransform(pid, uid) {
           jobStatus.updateTimestamp = new Date();
           updated = true;
         }
+
+        const quotaMatch = line.match(/try again in\s+(.+)/i);
+        if (quotaMatch) {
+          jobStatus.error = `Try again in ${quotaMatch[1].trim()}`;
+          jobStatus.updateTimestamp = new Date();
+          updated = true;
+        }
       }
 
       if (updated) {
