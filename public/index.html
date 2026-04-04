@@ -179,7 +179,6 @@
                     uid: data.uid,
                     status: data.status,
                     link: link,
-                    success: data.exitCode === 0,
                     message: data.message,
                     percentage: data.percentage || 0,
                     downloadedSize: data.downloadedSize || 0,
@@ -198,7 +197,7 @@
                 }
 
             } catch (err) {
-                saveToHistory({ uid: 'err_' + Date.now() + link, link, success: false, message: "Network Error", time: "" });
+                saveToHistory({ uid: 'err_' + Date.now() + link, link, status: 'error', message: "Network Error", error: "Network Error", time: "" });
             } finally {
                 input.disabled = false;
                 btn.disabled = false;
@@ -278,7 +277,6 @@
                         currentHistory[existingIndex] = {
                             ...existingItem,
                             status: job.status,
-                            success: job.exitCode === 0 || job.status === 'success',
                             message: job.message || existingItem.message,
                             percentage: job.percentage !== undefined ? job.percentage : existingItem.percentage || 0,
                             downloadedSize: job.downloadedSize !== undefined ? job.downloadedSize : existingItem.downloadedSize || 0,
