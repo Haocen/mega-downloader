@@ -105,7 +105,7 @@ class MegaJob extends HTMLElement {
             this._timeBr.style.display = 'none';
         }
 
-        if ((item.status === 'success' || item.success) && item.fileName) {
+        if (item.status === 'success' && item.fileName) {
             this._link.textContent = item.fileName;
         } else {
             this._link.textContent = item.link;
@@ -114,7 +114,7 @@ class MegaJob extends HTMLElement {
 
         let badgeColor;
         switch (true) {
-            case item.success:
+            case item.status === 'success':
                 badgeColor = 'text-bg-danger';
                 break;
             case item.status === 'downloading':
@@ -142,7 +142,7 @@ class MegaJob extends HTMLElement {
             this._progress.textContent = `${pct}%`;
         } else {
             const statusLabels = { failed: 'Failed', error: 'Error', notfound: 'Not Found', success: 'Finished' };
-            this._badge.textContent = item.success ? 'Finished' : (statusLabels[item.status] || item.status || 'Failed');
+            this._badge.textContent = statusLabels[item.status] || item.status || 'Unknown';
             this._progressContainer.style.display = 'none';
         }
     }
