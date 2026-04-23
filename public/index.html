@@ -276,35 +276,40 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ uids: activeJobs })
                 });
-                const statuses = await response.json();
+                if (!response.ok) {
+                    console.error(`Query failed: HTTP ${response.status}`);
+                } else {
 
-                let updated = false;
-                // Fetch fresh history explicitly in case it was updated concurrently
-                const currentHistory = JSON.parse(localStorage.getItem('mega_history') || '[]');
+                    const statuses = await response.json();
 
-                statuses.forEach(job => {
-                    const existingIndex = currentHistory.findIndex(h => h.uid === job.uid);
+                    let updated = false;
+                    // Fetch fresh history explicitly in case it was updated concurrently
+                    const currentHistory = JSON.parse(localStorage.getItem('mega_history') || '[]');
 
-                    if (existingIndex !== -1) {
-                        const existingItem = currentHistory[existingIndex];
-                        currentHistory[existingIndex] = {
-                            ...existingItem,
-                            status: job.status,
-                            message: job.message || existingItem.message,
-                            percentage: job.percentage !== undefined ? job.percentage : existingItem.percentage || 0,
-                            downloadedSize: job.downloadedSize !== undefined ? job.downloadedSize : existingItem.downloadedSize || 0,
-                            overallSize: job.overallSize !== undefined ? job.overallSize : existingItem.overallSize || 0,
-                            fileName: job.fileName || existingItem.fileName || '',
-                            exitCode: job.exitCode !== undefined ? job.exitCode : existingItem.exitCode,
-                            error: job.error || existingItem.error
-                        };
-                        updated = true;
+                    statuses.forEach(job => {
+                        const existingIndex = currentHistory.findIndex(h => h.uid === job.uid);
+
+                        if (existingIndex !== -1) {
+                            const existingItem = currentHistory[existingIndex];
+                            currentHistory[existingIndex] = {
+                                ...existingItem,
+                                status: job.status,
+                                message: job.message || existingItem.message,
+                                percentage: job.percentage !== undefined ? job.percentage : existingItem.percentage || 0,
+                                downloadedSize: job.downloadedSize !== undefined ? job.downloadedSize : existingItem.downloadedSize || 0,
+                                overallSize: job.overallSize !== undefined ? job.overallSize : existingItem.overallSize || 0,
+                                fileName: job.fileName || existingItem.fileName || '',
+                                exitCode: job.exitCode !== undefined ? job.exitCode : existingItem.exitCode,
+                                error: job.error || existingItem.error
+                            };
+                            updated = true;
+                        }
+                    });
+
+                    if (updated) {
+                        localStorage.setItem('mega_history', JSON.stringify(currentHistory));
+                        renderHistory();
                     }
-                });
-
-                if (updated) {
-                    localStorage.setItem('mega_history', JSON.stringify(currentHistory));
-                    renderHistory();
                 }
 
             } catch (err) {
