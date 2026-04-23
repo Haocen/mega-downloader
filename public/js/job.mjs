@@ -114,7 +114,7 @@ class MegaJob extends HTMLElement {
 
         let badgeColor;
         switch (true) {
-            case item.status === 'success':
+            case item.status === 'success' || item.status === 'finished':
                 badgeColor = 'text-bg-danger';
                 break;
             case item.status === 'downloading':
@@ -141,7 +141,7 @@ class MegaJob extends HTMLElement {
             this._progress.setAttribute('aria-valuenow', pct);
             this._progress.textContent = `${pct}%`;
         } else {
-            const statusLabels = { failed: 'Failed', error: 'Error', notfound: 'Not Found', success: 'Finished' };
+            const statusLabels = { failed: 'Failed', error: 'Error', notfound: 'Not Found', success: 'Success', finished: 'Finished' };
             this._badge.textContent = statusLabels[item.status] || item.status || 'Unknown';
             this._progressContainer.style.display = 'none';
         }

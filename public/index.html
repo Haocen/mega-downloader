@@ -142,6 +142,7 @@
 
     <script>
         const POLL_INTERVAL_IN_MS = 1000;
+        const POLL_JOB_STATUS = ['downloading', 'active', 'finished' /* This is needed because it will only change to 'success' after process exit */];
         const form = document.getElementById('downloadForm');
         const input = document.getElementById('megaLink');
         const btn = document.getElementById('submitBtn');
@@ -249,7 +250,7 @@
         async function pollStatus() {
             const history = JSON.parse(localStorage.getItem('mega_history') || '[]');
             const activeJobs = history
-                .filter(item => ['downloading', 'active'].includes(item.status))
+                .filter(item => POLL_JOB_STATUS.includes(item.status))
                 .map(item => item.uid);
 
             if (activeJobs.length === 0) {
@@ -311,7 +312,7 @@
         // Recover active jobs on initial load
         function initActiveJobs() {
             const history = JSON.parse(localStorage.getItem('mega_history') || '[]');
-            const hasActiveJobs = history.some(item => ['downloading', 'active'].includes(item.status));
+            const hasActiveJobs = history.some(item => POLL_JOB_STATUS.includes(item.status));
 
             if (hasActiveJobs) {
                 startPolling();
