@@ -136,7 +136,7 @@ router.post('/download', async (ctx, next) => {
         let jobStatus = jobsUidToStatusMap.get(uid) || {};
         jobStatus.exitCode = code;
         jobStatus.status = code !== 0 ? 'failed' : 'success';
-        jobStatus.message = code !== 0 ? 'Download Failed' : 'Download Finished';
+        jobStatus.message = code !== 0 ? `Download Failed with code ${code}` : 'Download Finished';
         jobStatus.endTimestamp = new Date();
         jobStatus.updateTimestamp = new Date();
         jobsUidToStatusMap.set(uid, jobStatus);
@@ -175,8 +175,6 @@ router.post('/download', async (ctx, next) => {
     } else {
       ctx.body = {
         ...jobsUidToStatusMap.get(uid),
-        exitCode,
-        message: exitCode === 0 ? "Download Finished" : `Failed with code ${exitCode}`,
         path: DOWNLOAD_DIR, // Helpful for the UI to know where it went
         uid: uid,
       };
