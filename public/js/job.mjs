@@ -63,8 +63,9 @@ class MegaJob extends HTMLElement {
 
             this._progressContainer = document.createElement('div');
             this._progressContainer.className = 'progress mt-2 job-progress-container';
-            this._progressContainer.style.height = '15px';
+            this._progressContainer.style.height = '20px';
             this._progressContainer.style.display = 'none';
+            this._progressContainer.style.position = 'relative';
 
             this._progress = document.createElement('div');
             this._progress.className = 'progress-bar progress-bar-striped progress-bar-animated bg-danger job-progress';
@@ -74,9 +75,20 @@ class MegaJob extends HTMLElement {
             this._progress.setAttribute('aria-valuenow', '0');
             this._progress.setAttribute('aria-valuemin', '0');
             this._progress.setAttribute('aria-valuemax', '100');
-            this._progress.textContent = '0%';
 
-            this._progressContainer.appendChild(this._progress);
+            this._progressLabel = document.createElement('span');
+            this._progressLabel.style.position = 'absolute';
+            this._progressLabel.style.inset = '0';
+            this._progressLabel.style.display = 'flex';
+            this._progressLabel.style.alignItems = 'center';
+            this._progressLabel.style.justifyContent = 'center';
+            this._progressLabel.style.fontSize = '0.75rem';
+            this._progressLabel.style.fontWeight = '600';
+            this._progressLabel.style.color = 'var(--bs-body-color)';
+            this._progressLabel.style.pointerEvents = 'none';
+            this._progressLabel.textContent = '0%';
+
+            this._progressContainer.append(this._progress, this._progressLabel);
 
             this.append(dFlex, this._progressContainer);
             this._initialized = true;
@@ -139,7 +151,8 @@ class MegaJob extends HTMLElement {
             const pct = item.percentage || 0;
             this._progress.style.width = `${pct}%`;
             this._progress.setAttribute('aria-valuenow', pct);
-            this._progress.textContent = `${pct}%`;
+            this._progressLabel.textContent = `${pct}%`;
+            this._progressLabel.style.color = pct >= 50 ? '#fff' : '#000';
         } else {
             const statusLabels = { failed: 'Failed', error: 'Error', notfound: 'Not Found', success: 'Success', finished: 'Finished' };
             this._badge.textContent = statusLabels[item.status] || item.status || 'Unknown';
